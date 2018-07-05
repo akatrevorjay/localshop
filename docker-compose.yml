@@ -42,4 +42,4 @@ worker:
         - DJANGO_MEDIA_ROOT=/localshop/media
         - CELERY_BROKER_URL=redis://redis:6379/0
     command: 
-        celery worker -B -E
+        celery -A localshop worker -B -E -l info
