@@ -25,7 +25,7 @@ setup(
     long_description='\n'.join(readme),
     zip_safe=False,
     install_requires=[
-        'celery==4.1.0',
+        'celery==4.1.1',
         'boto3==1.4.7',
         'django-braces==1.11.0',
         'django-celery-beat==1.1.0',
