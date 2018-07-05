@@ -7,7 +7,8 @@ db:
     ports:
         - "5432"
     volumes:
-        - ./docker-vol/postgresql:/var/lib/postgresql
+        # - ./docker-vol/postgresql:/var/lib/postgresql
+        - ${PWD}:/code
 
 redis:
     image: redis:latest
@@ -15,7 +16,8 @@ redis:
 web:
     build: .
     volumes:
-        - ./docker-vol:/opt/localshop
+        # - ./docker-vol:/opt/localshop
+        - ${PWD}:/code
     links:
         - db:db
         - redis:redis
@@ -24,6 +26,7 @@ web:
         - DATABASE_URL=postgresql://localshop:shopping@db/localshop
         - DJANGO_MEDIA_ROOT=/localshop/media
         - CELERY_BROKER_URL=redis://redis:6379/0
+        - DEBUG=True
     ports:
         - "8000:8000"
     command: uwsgi --http 0.0.0.0:8000 --module localshop.wsgi --master --die-on-term
@@ -32,7 +35,8 @@ web:
 worker:
     build: .
     volumes:
-        - ./docker-vol:/opt/localshop
+        # - ./docker-vol:/opt/localshop
+        - ${PWD}:/code
     links:
         - db:db
         - redis:redis

@@ -34,7 +34,7 @@ setup(
         'django-model-utils==3.0.0',
         'django-storages==1.6.5',
         'django-widget-tweaks==1.4.1',
-        'Django==1.11.7',
+        'Django<2',
         'docutils==0.12',
         'netaddr==0.7.12',
         'Pillow==4.3.0',

@@ -31,7 +31,7 @@ RUN pip3 install honcho uwsgi==2.0.15
 ADD src /code/src/
 ADD setup.py README.rst MANIFEST.in /code/
 
-RUN cd /code/ && pip3 install .
+RUN cd /code/ && pip3 install -e .
 
 ADD ./docker/ /home/localshop/
 

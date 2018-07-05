@@ -38,8 +38,9 @@ MEDIA_ROOT = env.str('LOCALSHOP_ROOT', os.path.join(PROJECT_ROOT, 'public', 'med
 STATIC_ROOT = env.str('STATIC_ROOT', os.path.join(PROJECT_ROOT, 'public', 'static'))
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(PROJECT_ROOT, 'static')
+    os.path.join(PROJECT_ROOT, 'static'),
 ]
+# STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
