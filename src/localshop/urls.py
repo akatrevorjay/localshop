@@ -3,6 +3,7 @@ import re
 from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.contrib.staticfiles import urls as sf_urls
 from django.views.generic import RedirectView
 
 import localshop.apps.dashboard.urls
@@ -39,3 +40,7 @@ urlpatterns = [
         include('localshop.apps.accounts.urls', namespace='accounts')),
     url(r'^admin/', include(admin.site.urls)),
 ]
+
+
+if settings.DEBUG:
+    urlpatterns += sf_urls.staticfiles_urlpatterns()
