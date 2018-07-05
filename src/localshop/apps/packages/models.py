@@ -1,6 +1,6 @@
-import re
 import logging
 import os
+import re
 from shutil import copyfileobj
 from tempfile import NamedTemporaryFile
 
