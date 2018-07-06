@@ -38,15 +38,10 @@ class Repository(TimeStampedModel):
         help_text=_(
             "The upstream pypi URL (default: https://pypi.python.org/simple)"))
 
-    # TODO Add self on create
     upstream_repositories = models.ManyToManyField('self')
 
     @property
     def packages_deep(self):
-        # packages = Package.objects.filter(
-        #     repository__in=self.upstream_repositories.all(),
-        # )
-
         repos = set(self.upstream_repositories.all())
         repos.add(self)
 
