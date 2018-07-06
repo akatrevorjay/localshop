@@ -67,7 +67,7 @@ class SimpleIndex(CsrfExemptMixin, RepositoryMixin, RepositoryAccessMixin,
             request.POST, request.FILES, request.user, self.repository)
 
     def get_queryset(self):
-        return self.repository.packages.all()
+        return self.repository.packages_deep.all()
 
 
 class SimpleDetail(RepositoryMixin, RepositoryAccessMixin, generic.DetailView):
@@ -85,7 +85,7 @@ class SimpleDetail(RepositoryMixin, RepositoryAccessMixin, generic.DetailView):
             condition |= Q(name__iexact=name)
 
         try:
-            package = self.repository.packages.get(condition)
+            package = self.repository.packages_deep.get(condition)
         except ObjectDoesNotExist:
             if not self.repository.enable_auto_mirroring:
                 raise Http404("Auto mirroring is not enabled")
@@ -180,7 +180,7 @@ def handle_register_or_upload(post_data, files, user, repository):
         for search_name in get_search_names(name):
             condition |= Q(name__iexact=search_name)
 
-        package = repository.packages.get(condition)
+        package = repository.packages_deep.get(condition)
 
         # Error out when we try to override a mirror'ed package for now
         # not sure what the best thing is
