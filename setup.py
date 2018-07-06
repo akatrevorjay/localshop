@@ -44,6 +44,7 @@ setup(
         'social-auth-app-django==1.2.0',
         'sqlparse==0.1.15',
         'Versio==0.3.0',
+        'pygments',
     ],
     tests_require=tests_require,
     extras_require={'test': tests_require},
