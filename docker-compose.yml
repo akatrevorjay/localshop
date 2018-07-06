@@ -1,49 +1,45 @@
-db:
-    image: sameersbn/postgresql:9.4
-    environment:
-        - DB_NAME=localshop
-        - DB_USER=localshop
-        - DB_PASS=shopping
-    ports:
-        - "5432"
-    volumes:
-        # - ./docker-vol/postgresql:/var/lib/postgresql
-        - ${PWD}:/code
+version: '2.1'
 
-redis:
+services:
+  db:
+    image: postgres:10
+    environment:
+      - POSTGRES_DB=localshop
+    expose:
+      - 5432
+    volumes:
+      - ${PWD}:/code
+
+  redis:
     image: redis:latest
 
-web:
+  web:
     build: .
     volumes:
-        # - ./docker-vol:/opt/localshop
-        - ${PWD}:/code
+      - ${PWD}:/code
     links:
-        - db:db
-        - redis:redis
+      - db:db
+      - redis:redis
     environment:
-        - DJANGO_SECRET_KEY=a7d03faa0c054b3dba38b396bf3c7996
-        - DATABASE_URL=postgresql://localshop:shopping@db/localshop
-        - DJANGO_MEDIA_ROOT=/localshop/media
-        - CELERY_BROKER_URL=redis://redis:6379/0
-        - DEBUG=True
-    ports:
-        - "8000:8000"
+      - DJANGO_SECRET_KEY=a7d03faa0c054b3dba38b396bf3c7996
+      - DATABASE_URL=postgresql://postgres:postgres@db/localshop
+      - DJANGO_MEDIA_ROOT=/localshop/media
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - DEBUG=True
+    expose:
+      - 8000
     command: uwsgi --http 0.0.0.0:8000 --module localshop.wsgi --master --die-on-term
 
-
-worker:
+  worker:
     build: .
     volumes:
-        # - ./docker-vol:/opt/localshop
-        - ${PWD}:/code
+      - ${PWD}:/code
     links:
-        - db:db
-        - redis:redis
+      - db:db
+      - redis:redis
     environment:
-        - DJANGO_SECRET_KEY=a7d03faa0c054b3dba38b396bf3c7996
-        - DATABASE_URL=postgresql://localshop:shopping@db/localshop
-        - DJANGO_MEDIA_ROOT=/localshop/media
-        - CELERY_BROKER_URL=redis://redis:6379/0
-    command: 
-        celery -A localshop worker -B -E -l info
+      - DJANGO_SECRET_KEY=a7d03faa0c054b3dba38b396bf3c7996
+      - DATABASE_URL=postgresql://postgres:postgres@db/localshop
+      - DJANGO_MEDIA_ROOT=/localshop/media
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    command: celery -A localshop worker -B -E -l info
