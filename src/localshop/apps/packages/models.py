@@ -12,7 +12,6 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import post_delete
 from django.utils.html import escape
-from django.utils.text import ugettext_lazy as _
 from django.utils.translation import ugettext_lazy as _
 from docutils.utils import SystemMessage
 from model_utils import Choices
