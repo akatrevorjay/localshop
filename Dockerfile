@@ -29,7 +29,8 @@ RUN apk add \
 RUN pip3 install honcho uwsgi
 
 ADD src /code/src/
-ADD setup.py README.rst MANIFEST.in /code/
+COPY requirements* /code/
+ADD setup.* versioneer.py README.rst MANIFEST.in /code/
 
 RUN cd /code/ && pip3 install -e .
 
