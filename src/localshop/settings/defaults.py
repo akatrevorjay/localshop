@@ -92,7 +92,8 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger'
 }
 
-CELERY_BROKER_URL = env.str('CELERY_BROKER_URL', default='redis://127.0.0.1:6379/0')
+REDIS_URI = env.str('REDIS_URI', default='redis://localhost:6379/0')
+CELERY_BROKER_URL = env.str('CELERY_BROKER_URL', default=REDIS_URI)
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_DEFAULT_QUEUE = 'default'
 CELERY_PREFETCH_MULTIPLIER = 0

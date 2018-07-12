@@ -1,62 +1,119 @@
+#!/usr/bin/env python
+
 from setuptools import setup, find_packages
+import itertools
+import glob
+import os
+import versioneer
+
+try:
+    from pip._internal.req import parse_requirements
+    from pip._internal.download import PipSession
+except ImportError:
+    from pip.req import parse_requirements
+    from pip.download import PipSession
+
+
+def setup_requirements(
+        patterns=[
+            'requirements.txt', 'requirements/*.txt', 'requirements/*.pip'
+        ],
+        combine=True
+):
+    """
+    Parse a glob of requirements and return a dictionary of setup() options.
+    Create a dictionary that holds your options to setup() and update it using this.
+    Pass that as kwargs into setup(), viola
+    Any files that are not a standard option name (ie install, tests, setup) are added to extras_require with their
+    basename minus ext. An extra key is added to extras_require: 'all', that contains all distinct reqs combined.
+    If you're running this for a Docker build, set `combine=True`.
+    This will set install_requires to all distinct reqs combined.
+    Example:
+    >>> _conf = dict(
+    ...     name='mainline',
+    ...     version='0.0.1',
+    ...     description='Mainline',
+    ...     author='Trevor Joynson <github@trevor.joynson,io>',
+    ...     url='https://trevor.joynson.io',
+    ...     namespace_packages=['mainline'],
+    ...     packages=find_packages(),
+    ...     zip_safe=False,
+    ...     include_package_data=True,
+    ... )
+    ... _conf.update(setup_requirements())
+    ... setup(**_conf)
+    :param str pattern: Glob pattern to find requirements files
+    :param bool combine: Set True to set install_requires to extras_require['all']
+    :return dict: Dictionary of parsed setup() options
+    """
+    session = PipSession()
+
+    # Handle setuptools insanity
+    key_map = {
+        'requirements.txt': 'install_requires',
+        'install.txt': 'install_requires',
+        'tests.txt': 'tests_require',
+        'setup.txt': 'setup_requires',
+    }
+    ret = {v: [] for v in key_map.values()}
+    extras = ret['extras_require'] = {}
+    all_reqs = set()
+
+    files = [glob.glob(pat) for pat in patterns]
+    files = itertools.chain(*files)
+
+    for full_fn in files:
+        # Parse
+        reqs = [
+            str(r.req)
+            for r in parse_requirements(full_fn, session=session)
+            # Must match env marker, eg:
+            #   yarl ; python_version >= '3.0'
+            if r.match_markers()
+        ]
+        all_reqs.update(reqs)
+
+        # Add in the right section
+        fn = os.path.basename(full_fn)
+        key = key_map.get(fn)
+        if key:
+            ret[key].extend(reqs)
+        else:
+            # Remove extension, use as extras key
+            key, _ = os.path.splitext(fn)
+            extras[key] = reqs
+
+    if 'all' not in extras:
+        extras['all'] = list(all_reqs)
+
+    if combine:
+        extras['install'] = ret['install_requires']
+        ret['install_requires'] = list(all_reqs)
+
+    return ret
+
 
 readme = []
 with open('README.rst', 'r') as fh:
     readme = fh.readlines()
 
-tests_require = [
-    'pytest>=2.6.0',
-    'pytest-cov>=1.7.0',
-    'pytest-django>=2.8.0',
-    'pytest-cache==1.0',
-    'requests-mock==1.3.0',
-    'django-webtest==1.9.2',
-    'factory-boy==2.9.2',
-    'mock==2.0.0',
-]
-
-setup(
+_conf = dict(
     name='localshop',
-    version='2.0.0-alpha.1',
     author='Michael van Tellingen',
     author_email='michaelvantellingen@gmail.com',
     url='http://github.com/mvantellingen/localshop',
     description='A private pypi server including auto-mirroring of pypi.',
+
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+
     long_description='\n'.join(readme),
     zip_safe=False,
-    install_requires=[
-        'celery==4.1.1',
-        'boto3==1.4.7',
-        'django-braces==1.11.0',
-        'django-celery-beat==1.1.0',
-        'django-celery-results==1.0.1',
-        'django-environ==0.4.4',
-        'django-model-utils==3.0.0',
-        'django-storages==1.6.5',
-        'django-widget-tweaks==1.4.1',
-        'Django<2',
-        'docutils==0.12',
-        'netaddr==0.7.12',
-        'Pillow==4.3.0',
-        'psycopg2==2.7.3.2',
-        'redis==2.10.6',
-        'requests==2.18.4',
-        'social-auth-app-django==1.2.0',
-        'sqlparse==0.1.15',
-        'Versio==0.3.0',
-        'pygments',
-    ],
-    tests_require=tests_require,
-    extras_require={'test': tests_require},
     license='BSD',
     include_package_data=True,
     package_dir={'': 'src'},
     packages=find_packages('src'),
-    entry_points={
-        'console_scripts': [
-            'localshop = localshop.runner:main'
-        ]
-    },
+    entry_points={'console_scripts': ['localshop = localshop.runner:main']},
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Framework :: Django',
@@ -76,3 +133,6 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
 )
+
+_conf.update(setup_requirements(combine=False))
+setup(**_conf)

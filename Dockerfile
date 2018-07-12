@@ -1,4 +1,4 @@
-FROM alpine:3.6
+FROM alpine:3.7
 
 MAINTAINER  Michael van Tellingen <michaelvantellingen@gmail.com>
 ENV LOCALSHOP_ROOT /home/localshop/data/
@@ -26,7 +26,7 @@ RUN apk add \
     zlib-dev \
     && rm -rf /var/cache/apk/*
 
-RUN pip3 install honcho uwsgi==2.0.15
+RUN pip3 install honcho uwsgi
 
 ADD src /code/src/
 ADD setup.py README.rst MANIFEST.in /code/
