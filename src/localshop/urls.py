@@ -42,5 +42,5 @@ urlpatterns = [
 ]
 
 
-if settings.DEBUG:
+if settings.SERVE_STATICFILES:
     urlpatterns += sf_urls.staticfiles_urlpatterns()

@@ -46,6 +46,7 @@ STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 ]
+SERVE_STATICFILES = env.bool('SERVE_STATICFILES', default=DEBUG)
 
 SESSION_COOKIE_AGE = 28 * 24 * 60 * 60  # 4 weeks
 
