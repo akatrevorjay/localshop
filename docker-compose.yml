@@ -29,6 +29,7 @@ services:
     expose:
       - 8000
     command: uwsgi --http 0.0.0.0:8000 --module localshop.wsgi --master --die-on-term
+    # command: localshop collectstatic && uwsgi --http 0.0.0.0:8000 --module localshop.wsgi --master --die-on-term --static-map /static=/home/localshop/static
 
   worker:
     build: .
