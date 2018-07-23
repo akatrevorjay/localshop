@@ -24,6 +24,8 @@ RUN apk add \
     python3-dev \
     redis \
     zlib-dev \
+    postgresql-dev \
+    postgresql-client \
     && rm -rf /var/cache/apk/*
 
 RUN pip3 install honcho uwsgi
