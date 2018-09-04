@@ -177,7 +177,7 @@ class Release(models.Model):
     version = models.CharField(max_length=512)
 
     class Meta:
-        ordering = ['-version']
+        ordering = ['-modified', '-created', '-version']
 
     def __str__(self):
         return self.version
