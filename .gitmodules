@@ -1,0 +1,3 @@
+[submodule "helm/localshop/repos/common"]
+	path = helm/localshop/repos/common
+	url = https://github.com/technosophos/common-chart

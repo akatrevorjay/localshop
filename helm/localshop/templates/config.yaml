@@ -1,0 +1,33 @@
+---
+{{- $fullname := (include "localshop.fullname" .) }}
+{{- $chartlabels := (include "localshop.chartlabels" .) }}
+{{- $appenv := (include "localshop.appenv" .) }}
+{{- $image := (printf "%s%s:%s" .Values.localshop.image .Values.localshop.tag) }}
+
+{{- $host_prefix := (printf "%s" .Release.Name) }}
+
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: {{ $fullname }}-config
+  labels:
+{{ $chartlabels | indent 4 }}
+
+data:
+  APP_ENV: {{ .Release.Name }}
+
+  # from values
+  {{ include "localshop.env" . | indent 2 }}
+
+  {{- if .Values.tags.postgresql }}
+  {{- $psql := .Values.postgresql }}
+  {{- $postgresql_host := (printf "%s-postgresql" $host_prefix) }}
+  {{- $db_uri := (printf "postgresql://%s:%s@%s/%s" $psql.postgresUser $psql.postgresPassword $postgresql_host $psql.postgresDatabase) }}
+  DATABASE_URL: {{ $db_uri | quote }}
+  {{- else }}
+  DATABASE_URL: {{ "sqlite:///state.sqlite" | quote }}
+  {{- end }}
+
+  REDIS_URI: redis://{{ .Release.Name }}-redis:6379/0
+

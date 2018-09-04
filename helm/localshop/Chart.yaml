@@ -1,0 +1,8 @@
+name: localshop
+description: Localshop Cheeseshop
+version: 0.9.3
+keywords:
+  - localshop
+sources: https://github.com/OsaroAI/localshop.git
+home: https://github.com/mvantellingen/localshop
+

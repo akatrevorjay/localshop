@@ -1,0 +1,308 @@
+{{- $fullname := (include "localshop.fullname" .) }}
+{{- $chartlabels := (include "localshop.chartlabels" .) }}
+{{- $appenv := (include "localshop.appenv" .) }}
+{{- $image := (printf "%s:%s" .Values.localshop.image .Values.localshop.tag) }}
+{{- $dns_zone := .Values.localshop.dns_zone }}
+
+{{- $config_checksum := (include (printf "%s/%s" $.Template.BasePath "config.yaml") . | sha256sum) }}
+{{- $secrets_checksum := (include (printf "%s/%s" $.Template.BasePath "secrets.yaml") . | sha256sum) }}
+{{- $env_checksum := ($appenv | sha256sum) }}
+
+{{- $app := .Values.localshop }}
+{{- $serviceAccountName := .Values.localshop.serviceAccountName }}
+{{- $volumes := .Values.localshop.volumes }}
+
+{{- range $component_name, $component_values := .Values.localshop.deployments }}
+# -- deployment: {{ $component_name }}
+{{- with $component_values }}
+
+# {{ $component_name }} -- deployment
+apiVersion: apps/v1beta1
+kind: Deployment
+
+metadata:
+  name: {{ printf "%s-%s" $fullname $component_name | quote }}
+  labels:
+    component: {{ $component_name }}
+{{ $chartlabels | indent 4 }}
+
+spec:
+  replicas: {{ .replicas }}
+
+  {{ if $serviceAccountName }}
+  serviceAccountName: {{ $serviceAccountName }}
+  {{ end }}
+
+  strategy:
+    {{- if .strategy }}
+{{ toYaml .strategy | indent 4 }}
+    {{- else }}
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+    {{- end }}
+
+  minReadySeconds: 5
+
+  # hostNetwork: true
+
+  selector:
+    matchLabels:
+      component: {{ $component_name }}
+
+  template:
+    metadata:
+      labels:
+        component: {{ $component_name }}
+{{ $chartlabels | indent 8 }}
+
+      annotations:
+        checksum/secrets: {{ $secrets_checksum | quote }}
+        checksum/config: {{ $config_checksum | quote }}
+        checksum/env: {{ $env_checksum | quote }}
+
+    spec:
+      restartPolicy: Always
+
+      {{- if $serviceAccountName }}
+      serviceAccountName: {{ $serviceAccountName }}
+      {{- end }}
+
+      # init containers
+      {{- if .initContainers }}
+      initContainers:
+      {{- range $name, $cont := .initContainers }}
+      - name: {{ printf "%s-%s" $fullname $name | quote }}
+        image: {{ $cont.image | default $image | quote }}
+        command:
+{{ toYaml $cont.command | indent 8 }}
+
+        # appenv
+{{ $appenv | indent 8 }}
+        # env: values
+        {{- if .env }}
+        {{- range $name, $val := .env }}
+        - name: {{ $name | quote }}
+          value: {{ $val | quote }}
+        {{- end }}
+        {{- end }}
+
+      {{- end }}
+      {{- end }}
+
+      containers:
+      - name: {{ printf "%s-%s" $fullname $component_name | quote }}
+        image: {{ $image | quote }}
+
+        {{ if .command }}
+        command:
+{{ toYaml .command | indent 8 }}
+        # {{ else }}
+        # command:
+        #   - {{ $component_name }}
+        {{ end }}
+
+        {{ if .args }}
+        args:
+{{ toYaml .args | indent 8 }}
+        # {{ else }}
+        # args: []
+        {{ end }}
+
+
+        # resources
+        {{- if .resources }}
+        resources:
+{{ toYaml .resources | indent 10 }}
+        {{- end }}
+
+        # ports
+        {{- if .ports }}
+        ports:
+        {{- range $name, $port := .ports }}
+        - name: {{ $name }}
+          containerPort: {{ include "common.port" $port }}
+        {{- end }}
+        {{- end }}
+
+        # healthz
+        {{- if .healthz }}
+        readinessProbe:
+{{ toYaml .healthz | indent 10 }}
+        livenessProbe:
+{{ toYaml .healthz | indent 10 }}
+        {{- end }}
+
+        # appenv
+{{ $appenv | indent 8 }}
+        # env: values
+        {{- if .env }}
+        {{- range $name, $val := .env }}
+        - name: {{ $name | quote }}
+          value: {{ $val | quote }}
+        {{- end }}
+        {{- end }}
+
+        {{ if .volumes }}
+
+        volumeMounts:
+        {{ range $volume_name, $volume_values := .volumes }}
+        # -- volume: {{ $volume_name }}
+        {{- with $volume_values }}
+        - name: {{ printf "%s-%s" $fullname $volume_name | quote }}
+          mountPath: {{ .path }}
+        {{ end }}
+        {{ end }}
+
+        {{ end }}
+
+      # pod volume mapping
+      {{- if $volumes }}
+      volumes:
+        {{- range $volume_name, $volume_values := $volumes }}
+        # -- volume: {{ $volume_name }}
+        {{- with $volume_values }}
+        - name: {{ printf "%s-%s" $fullname $volume_name | quote }}
+          {{- if .persistentVolumeClaim }}
+          persistentVolumeClaim:
+            claimName: {{ printf "%s-%s" $fullname $volume_name | quote }}
+          {{- end }}
+
+          {{- if .configMap }}
+          configMap:
+            name: {{ printf "%s-%s" $fullname .configMap | quote }}
+          {{- end }}
+
+          {{- if .hostPath }}
+          hostPath:
+            {{- if .auto_subdir }}
+            path: {{ printf "%s/%s-%s-%s" .hostPath $fullname $component_name $volume_name | quote }}
+            {{- else }}
+            path: {{ .hostPath }}
+            {{- end }}
+          {{- end }}
+
+          {{- if .emptyDir }}
+          emptyDir:
+{{ toYaml .emptyDir | indent 10 }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+
+
+{{- if .service }}
+---
+
+# {{ $component_name }} -- service
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: {{ printf "%s-%s" $fullname $component_name | quote }}
+
+  labels:
+    component: {{ $component_name }}
+{{ $chartlabels | indent 4 }}
+
+  annotations:
+    {{- if .service.annotations }}
+{{ toYaml .service.annotations | indent 4 }}
+    {{- end }}
+
+spec:
+  selector:
+    component: {{ $component_name | quote }}
+
+  type: {{ .service.type | default "LoadBalancer" }}
+
+  ports:
+  {{ range $port, $name := .service.expose }}
+  - name: {{ $name }}
+    port: {{ include "common.port" $port }}
+    targetPort: {{ $name }}
+  {{- end }}
+{{- end }}
+
+{{ end }}
+---
+{{ end }}
+
+
+{{- $bootstrap := $app.bootstrap }}
+{{- if $bootstrap }}
+{{- $component_name := "bootstrap" }}
+{{- with $bootstrap }}
+apiVersion: batch/v1
+kind: Job
+
+metadata:
+  name: {{ printf "%s-%s" $fullname $component_name | quote }}
+  labels:
+    component: {{ $component_name }}
+{{ $chartlabels | indent 4 }}
+  annotations:
+    # This is what defines this resource as a hook.
+    # Without this line, the job is considered part of the release
+    # include "common.hook" "pre-install,pre-upgrade" | indent 4
+{{ include "common.hook" "post-install,pre-upgrade" | indent 4 }}
+    # "helm.sh/hook-weight": "-5"
+
+spec:
+  template:
+    metadata:
+      name: {{ printf "%s-%s" $fullname $component_name | quote }}
+      labels:
+        component: {{ $component_name }}
+{{ $chartlabels | indent 8 }}
+
+    spec:
+      {{- if .restartPolicy }}
+      restartPolicy:  {{ .restartPolicy }}
+      {{- else }}
+      restartPolicy: OnFailure
+      {{- end }}
+
+      {{ if $serviceAccountName }}
+      serviceAccountName: {{ $serviceAccountName }}
+      {{ end }}
+
+      containers:
+      - image: {{ $image | quote }}
+        name: {{ printf "%s-%s" $fullname $component_name | quote }}
+
+        {{- if .command }}
+        command:
+{{ toYaml .command | indent 8 }}
+        # {{ else }}
+        # command:
+        #   - {{ $component_name }}
+        {{- end }}
+
+        {{- if .args }}
+        args:
+{{ toYaml .args | indent 8 }}
+        {{ else }}
+        # args: []
+        {{- end }}
+
+        {{- if .resources }}
+        resources:
+{{ toYaml .resources | indent 8 }}
+        {{- end }}
+
+        # appenv
+{{ $appenv | indent 8 }}
+        # env: values
+        {{- if .env }}
+        {{- range $name, $val := .env }}
+        - name: {{ $name | quote }}
+          value: {{ $val | quote }}
+        {{- end }}
+        {{- end }}
+
+---
+{{ end }}
+{{ end }}
+

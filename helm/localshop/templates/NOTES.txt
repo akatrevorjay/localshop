@@ -1,0 +1,27 @@
+Localshop Helm Chart
+====================
+
+Currently, a bug exists in this template where it always expects to be able to create a job.
+
+This job is used to bootstrap `localshop`, update db schema, etc.
+IOW, things that should only be ran by a single instance at once.
+
+The job is used as a lock in this case.
+
+This is fine for an install and only becomes an issue in the case of an upgrade.
+
+**Workaround:** If you upgrade, just delete the existing job beforehand. Kudos.
+
+
+Context
+-------
+
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get {{ .Release.Name }}
+

@@ -1,0 +1,106 @@
+localshop:
+  deployments:
+    web:
+      command: ["sh", "-c", "uwsgi --http 0.0.0.0:8000 --module localshop.wsgi --master --die-on-term --static-map /static=/home/localshop/static -p 8"]
+
+      replicas: 1
+
+      env:
+        DEBUG: false
+
+        ROOT_URI: 'https://localshop.cluster.k8s.example-company.io/'
+
+        # LOCALSHOP_FILE_STORAGE: storages.backends.s3boto.S3BotoStorage
+        # LOCALSHOP_FILE_BUCKET_NAME: bucket-name
+
+        # OAUTH2_PROVIDER: github
+        # OAUTH2_APPLICATION_ID: 
+        # OAUTH2_SECRET_KEY: 
+
+      # resources:
+      #   memory: 1024Mi
+      #   cpu: 100m
+
+      # Expose using a load balancer
+      service:
+        annotations:
+          # AWS/ELB docs: https://github.com/kubernetes/kubernetes/blob/master/pkg/cloudprovider/providers/aws/aws.go
+
+        # Ports to expose
+        expose:
+          # $lb_port: $port_name (from below)
+          8000: http
+
+      ports:
+        http: 8000
+
+      healthz:
+        httpGet:
+          path: /accounts/login/
+          port: http
+        initialDelaySeconds: 10
+        periodSeconds: 3
+        failureThreshold: 6
+
+
+    worker:
+      command: ["celery", "-A", "localshop", "worker", "-B", "-E", "-l", "info"]
+
+      replicas: 1
+
+      env: {}
+
+      # resources:
+      #   memory: 1024Mi
+      #   cpu: 100m
+
+      # healthz:
+      #   httpGet:
+      #     path: /
+      #     port: http
+      #   initialDelaySeconds: 10
+      #   periodSeconds: 3
+      #   failureThreshold: 6
+
+
+tags:
+  # These can be overridden per deployment to enable/disable them.
+  postgresql: true
+  redis: true
+  sentinel: true  # this is ignored
+
+
+# Note: Not used since the tag above is commented.
+postgresql:
+  imageTag: "10"
+  imagePullPolicy: Always
+
+  # HACK The automagic secret password generation is/was broken in helm 2.5.0, so this is hardcoded to crap values
+  # temporarily.
+  postgresDatabase: postgres
+  postgresUser: postgres
+  postgresPassword: postgres
+
+  persistence:
+    size: 1Gi
+
+  # resources:
+  #   memory: 512Mi
+  #   cpu: 100m
+
+
+redis:
+  imageTag: "3"
+  imagePullPolicy: Always
+
+  # HACK The automagic secret password generation is/was broken in helm 2.5.0, so this is hardcoded to crap values
+  # temporarily.
+  usePassword: false
+
+  persistence:
+    size: 1Gi
+
+  # resources:
+  #   memory: 512Mi
+  #   cpu: 100m
+
