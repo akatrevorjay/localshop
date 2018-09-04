@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
-import itertools
 import glob
+import itertools
 import os
+
 import versioneer
+from setuptools import find_packages, setup
 
 try:
     from pip._internal.req import parse_requirements
@@ -18,16 +19,19 @@ def setup_requirements(
         patterns=[
             'requirements.txt', 'requirements/*.txt', 'requirements/*.pip'
         ],
-        combine=True
+        combine=True,
 ):
     """
     Parse a glob of requirements and return a dictionary of setup() options.
     Create a dictionary that holds your options to setup() and update it using this.
     Pass that as kwargs into setup(), viola
+
     Any files that are not a standard option name (ie install, tests, setup) are added to extras_require with their
     basename minus ext. An extra key is added to extras_require: 'all', that contains all distinct reqs combined.
+
     If you're running this for a Docker build, set `combine=True`.
     This will set install_requires to all distinct reqs combined.
+
     Example:
     >>> _conf = dict(
     ...     name='mainline',
@@ -42,6 +46,7 @@ def setup_requirements(
     ... )
     ... _conf.update(setup_requirements())
     ... setup(**_conf)
+
     :param str pattern: Glob pattern to find requirements files
     :param bool combine: Set True to set install_requires to extras_require['all']
     :return dict: Dictionary of parsed setup() options
@@ -50,10 +55,10 @@ def setup_requirements(
 
     # Handle setuptools insanity
     key_map = {
-        'requirements.txt': 'install_requires',
-        'install.txt': 'install_requires',
-        'tests.txt': 'tests_require',
-        'setup.txt': 'setup_requires',
+        'requirements': 'install_requires',
+        'install': 'install_requires',
+        'tests': 'tests_require',
+        'setup': 'setup_requires',
     }
     ret = {v: [] for v in key_map.values()}
     extras = ret['extras_require'] = {}
@@ -75,13 +80,14 @@ def setup_requirements(
 
         # Add in the right section
         fn = os.path.basename(full_fn)
-        key = key_map.get(fn)
+        barefn, _ = os.path.splitext(fn)
+        key = key_map.get(barefn)
+
         if key:
             ret[key].extend(reqs)
-        else:
-            # Remove extension, use as extras key
-            key, _ = os.path.splitext(fn)
             extras[key] = reqs
+
+        extras[barefn] = reqs
 
     if 'all' not in extras:
         extras['all'] = list(all_reqs)
@@ -103,10 +109,8 @@ _conf = dict(
     author_email='michaelvantellingen@gmail.com',
     url='http://github.com/mvantellingen/localshop',
     description='A private pypi server including auto-mirroring of pypi.',
-
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-
     long_description='\n'.join(readme),
     zip_safe=False,
     license='BSD',
@@ -135,4 +139,6 @@ _conf = dict(
 )
 
 _conf.update(setup_requirements(combine=False))
-setup(**_conf)
+
+if __name__ == '__main__':
+    setup(**_conf)
