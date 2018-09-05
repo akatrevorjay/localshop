@@ -5,7 +5,7 @@
 /dist/
 /source/
 /public/
-localshop.db
+*.db
 *.pyc
 *.swp
 .coverage
