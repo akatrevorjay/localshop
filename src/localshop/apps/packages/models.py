@@ -233,7 +233,7 @@ class ReleaseFile(models.Model):
 
     md5_digest = models.CharField(max_length=512)
 
-    python_version = models.CharField(max_length=50)
+    python_version = models.CharField(max_length=100)
 
     url = models.CharField(max_length=1024, blank=True)
 
