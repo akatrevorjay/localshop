@@ -178,6 +178,8 @@ DEFAULT_FILE_STORAGE = env.str(
     default='django.core.files.storage.FileSystemStorage')
 
 AWS_STORAGE_BUCKET_NAME = env.str('LOCALSHOP_FILE_BUCKET_NAME', default='')
+# This defaults to `public-read`. No, really.
+AWS_DEFAULT_ACL = None
 
 LOCALSHOP_DELETE_FILES = False
 LOCALSHOP_HTTP_PROXY = None
