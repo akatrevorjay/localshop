@@ -15,7 +15,7 @@ docutils
 netaddr
 psycopg2
 pygments
-redis
+redis<3
 requests
 social-auth-app-django
 sqlparse
