@@ -8,7 +8,8 @@ services:
     expose:
       - 5432
     volumes:
-      - ${PWD}:/code
+        # - ./docker-vol/postgresql:/var/lib/postgresql
+        - ${PWD}:/code
 
   redis:
     image: redis:latest
@@ -16,7 +17,8 @@ services:
   web:
     build: .
     volumes:
-      - ${PWD}:/code
+        # - ./docker-vol:/opt/localshop
+        - ${PWD}:/code
     links:
       - db:db
       - redis:redis
@@ -31,10 +33,12 @@ services:
     command: uwsgi --http 0.0.0.0:8000 --module localshop.wsgi --master --die-on-term -p 2
     # command: localshop collectstatic && uwsgi --http 0.0.0.0:8000 --module localshop.wsgi --master --die-on-term --static-map /static=/home/localshop/static
 
+
   worker:
     build: .
     volumes:
-      - ${PWD}:/code
+        # - ./docker-vol:/opt/localshop
+        - ${PWD}:/code
     links:
       - db:db
       - redis:redis
